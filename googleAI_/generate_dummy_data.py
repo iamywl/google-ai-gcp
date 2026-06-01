@@ -14,7 +14,7 @@ def generate_data(file_path="/home/yoonwoodev/plan_A/dummy_logs.csv", n=100):
             "id": str(uuid.uuid4()),
             "department_from": random.choice(depts),
             "department_to": random.choice(depts),
-            "event_time": (datetime.now() - timedelta(hours=random.randint(1, 720))).isoformat(),
+            "timestamp": (datetime.now() - timedelta(hours=random.randint(1, 720))).isoformat(),
             "action": random.choice(actions)
         })
     
