@@ -1,0 +1,20 @@
+# Ignore all hidden files/directories
+.*
+# But keep .gitignore
+!.gitignore
+
+# Ignore specific large/cache directories (already covered by .*, but being explicit)
+.cache/
+.npm/
+.apache_beam/
+.codeoss/
+.gemini/
+.local/
+.vscode/
+
+# Ignore other garbage
+__pycache__/
+*.py[cod]
+.env
+venv/
+pdf-forge-exports/
