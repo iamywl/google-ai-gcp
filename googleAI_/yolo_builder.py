@@ -98,7 +98,7 @@ def execute_yolo_pipeline(target_dir):
     # 3. 단계 2.2: 관심사 분리 레이어드 아키텍처 소스코드 구현 (src/)
     # 의존성 정의
     with open(f"{target_dir}/requirements.txt", "w") as f:
-        f.write("fastapi==0.111.0\nuvicorn==0.30.1\ngoogle-cloud-aiplatform==1.52.0\ngoogle-genai==0.3.0\npandas==2.2.2\npython-multipart==0.0.9\npydantic==2.7.1\npython-dotenv==1.0.1\nsqlalchemy==2.0.30\nstreamlit==1.35.0\nplotly==5.22.0\nrequests==2.32.3\n")
+        f.write("fastapi==0.111.0\nuvicorn==0.30.1\ngoogle-cloud-aiplatform==1.52.0\ngoogle-genai==0.3.0\npandas==2.2.2\npython-multipart==0.0.9\npydantic==2.7.1\npython-dotenv==1.0.1\nsqlalchemy==2.0.30\n")
 
     # Controller 레이어
     with open(f"{target_dir}/src/controller.py", "w") as f:
@@ -145,66 +145,89 @@ async def analyze_data(file: UploadFile = File(...)):
     }
 """)
 
-    # Streamlit 대시보드 구현
-    with open(f"{target_dir}/src/dashboard.py", "w") as f:
-        f.write("""import streamlit as st
-import requests
-import pandas as pd
-import plotly.express as px
-import io
-
-st.set_page_config(page_title="FlowLens AI Dashboard", layout="wide")
-
-st.title("🔍 FlowLens AI: Process Pathology Dashboard")
-st.markdown("### Cross-Dept Process Defect Diagnosis & Optimization")
-
-uploaded_file = st.file_uploader("Upload Business Process Logs (CSV)", type="csv")
-
-if uploaded_file is not None:
-    st.success("File uploaded successfully!")
+    # React 프론트엔드 구조 생성 (웹 표준 준수)
+    os.makedirs(f"{target_dir}/frontend/src", exist_ok=True)
+    with open(f"{target_dir}/frontend/package.json", "w") as f:
+        f.write('{"name":"flowlens-ui","version":"1.0.0","type":"module","scripts":{"build":"vite build"},"dependencies":{"react":"^18.2.0","react-dom":"^18.2.0","axios":"^1.6.0","recharts":"^2.10.0"},"devDependencies":{"@vitejs/plugin-react":"^4.1.0","vite":"^4.5.0"}}')
     
-    if st.button("Analyze Process"):
-        with st.spinner("Analyzing logs and generating AI report..."):
-            # FastAPI 백엔드 호출 (start.sh에서 8000번 포트로 구동됨)
-            backend_url = "http://localhost:8000/v1/analyze"
-            
-            try:
-                files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")}
-                response = requests.post(backend_url, files=files)
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    stats = result.get("statistics", {})
-                    ai_report = result.get("ai_report", "")
-                    
-                    col1, col2 = st.columns([1, 1])
-                    
-                    with col1:
-                        st.subheader("📊 Quantitative Analysis")
-                        pp_stats = stats.get("pingpong_defects", {})
-                        if pp_stats:
-                            df_pp = pd.DataFrame(list(pp_stats.items()), columns=['Transition', 'Count'])
-                            st.plotly_chart(px.bar(df_pp, x='Transition', y='Count', title="Ping-pong Defects"), use_container_width=True)
-                        
-                        delay_stats = stats.get("average_delays_hours", {})
-                        if delay_stats:
-                            df_delay = pd.DataFrame(list(delay_stats.items()), columns=['Department', 'Avg Delay (Hours)'])
-                            st.plotly_chart(px.bar(df_delay, x='Department', y='Avg Delay (Hours)', title="Avg Idle Time"), use_container_width=True)
-                    
-                    with col2:
-                        st.subheader("🤖 AI Strategic Report")
-                        st.markdown(ai_report)
-                else:
-                    st.error(f"Analysis failed: {response.text}")
-            except Exception as e:
-                st.error(f"Error connecting to backend: {e}")
+    with open(f"{target_dir}/frontend/index.html", "w") as f:
+        f.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>FlowLens AI</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>')
+
+    with open(f"{target_dir}/frontend/src/main.jsx", "w") as f:
+        f.write('import React from "react";import ReactDOM from "react-dom/client";import App from "./App";ReactDOM.createRoot(document.getElementById("root")).render(<React.StrictMode><App /></React.StrictMode>);')
+
+    with open(f"{target_dir}/frontend/src/App.jsx", "w") as f:
+        f.write("""import React, { useState } from 'react';
+import axios from 'axios';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+const App = () => {
+  const [file, setFile] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await axios.post('/v1/analyze', formData);
+      setResult(res.data);
+    } catch (err) { alert('분석 실패: ' + err.message); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ fontFamily: 'sans-serif', padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
+      <header role="banner">
+        <h1 style={{ color: '#1a202c', borderBottom: '2px solid #edf2f7', paddingBottom: '20px' }}>🔍 FlowLens AI: Process Pathologist</h1>
+      </header>
+      <main role="main" style={{ marginTop: '30px' }}>
+        <section aria-labelledby="upload-title" style={{ background: '#f7fafc', padding: '30px', borderRadius: '8px' }}>
+          <h2 id="upload-title">로그 데이터 업로드</h2>
+          <input type="file" accept=".csv" onChange={(e) => setFile(e.target.files[0])} aria-label="CSV 파일 선택" />
+          <button onClick={handleUpload} disabled={loading} style={{ marginLeft: '10px', padding: '10px 20px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+            {loading ? '분석 중...' : '프로세스 진단 실행'}
+          </button>
+        </section>
+
+        {result && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '40px' }}>
+            <section aria-labelledby="stats-title">
+              <h2 id="stats-title">📊 정량적 분석</h2>
+              <div style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={Object.entries(result.statistics.pingpong_defects).map(([k, v]) => ({ name: k, count: v }))}>
+                    <XAxis dataKey="name" /> <YAxis /> <Tooltip /> <Bar dataKey="count" fill="#e53e3e" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+            <section aria-labelledby="report-title">
+              <h2 id="report-title">🤖 AI 전략 리포트</h2>
+              <div style={{ whiteSpace: 'pre-wrap', background: '#fff', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '8px' }}>
+                {result.ai_report}
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
+      <footer role="contentinfo" style={{ marginTop: '50px', color: '#718096', fontSize: '14px' }}>
+        &copy; 2024 FlowLens AI. Engineering-grade Process Diagnosis Platform.
+      </footer>
+    </div>
+  );
+};
+export default App;
 """)
 
     # Main 엔트리포인트
     with open(f"{target_dir}/src/main.py", "w") as f:
         f.write("""import uvicorn
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
@@ -377,7 +400,7 @@ class AnalysisRepository:
 
     # 실행 스크립트 (FastAPI + Streamlit 병렬 구동)
     with open(f"{target_dir}/src/start.sh", "w") as f:
-        f.write("#!/bin/bash\\nuvicorn src.main:app --host 0.0.0.0 --port 8000 &\\nstreamlit run src/dashboard.py --server.port 8080 --server.address 0.0.0.0\\n")
+        f.write("#!/bin/bash\\nuvicorn src.main:app --host 0.0.0.0 --port 8080\\n")
     os.chmod(f"{target_dir}/src/start.sh", 0o755)
 
     # 가상 데이터 시드 스크립트 생성
@@ -394,7 +417,7 @@ class AnalysisRepository:
 
     # 5. 단계 2.4: 멀티 스테이지 Dockerfile 컴파일 (Footprint 최적화 및 non-root 인프라)
     with open(f"{target_dir}/Dockerfile", "w") as f:
-        f.write("FROM python:3.12-slim AS builder\\nWORKDIR /app\\nCOPY requirements.txt .\\nRUN pip install --user --no-cache-dir -r requirements.txt\\n\\nFROM python:3.12-slim\\nRUN addgroup --system appgroup && adduser --system --group appuser\\nWORKDIR /app\\nCOPY --from=builder /root/.local /home/appuser/.local\\nCOPY ./src ./src\\nENV PATH=/home/appuser/.local/bin:$PATH\\nRUN chmod +x src/start.sh\\nUSER appuser\\nEXPOSE 8080\\nCMD [\"/bin/bash\", \"src/start.sh\"]\\n")
+        f.write("FROM node:18-slim AS frontend-builder\\nWORKDIR /app/frontend\\nCOPY frontend/package*.json ./\\nRUN npm install\\nCOPY frontend/ ./\\nRUN npm run build\\n\\nFROM python:3.12-slim AS builder\\nWORKDIR /app\\nCOPY requirements.txt .\\nRUN pip install --user --no-cache-dir -r requirements.txt\\n\\nFROM python:3.12-slim\\nRUN addgroup --system appgroup && adduser --system --group appuser\\nWORKDIR /app\\nCOPY --from=builder /root/.local /home/appuser/.local\\nCOPY --from=frontend-builder /app/frontend/dist ./frontend/dist\\nCOPY ./src ./src\\nENV PATH=/home/appuser/.local/bin:$PATH\\nRUN chmod +x src/start.sh\\nUSER appuser\\nEXPOSE 8080\\nCMD [\"/bin/bash\", \"src/start.sh\"]\\n")
 
     # Cloud Build 설정 추가
     with open(f"{target_dir}/cloudbuild.yaml", "w") as f:

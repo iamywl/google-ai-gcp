@@ -4,7 +4,7 @@
 본 프로젝트는 기업 내 부서 간 협업 프로세스에서 발생하는 3대 결함(핑퐁, 일탈, 지연)을 이벤트 로그 데이터 기반으로 자동 진단하고, Vertex AI(Gemini)를 활용하여 전략적 개선 리포트를 생성하는 엔터프라이즈급 분석 플랫폼 구축을 목적으로 함.
 
 ## 2. 기술 스택 및 아키텍처 (Technical Stack)
-- **Runtime**: Python 3.12 (FastAPI)
+- **Runtime**: Python 3.12 (FastAPI) + React 18 (Vite)
 - **Data Processing**: Pandas (Vectorized Analysis)
 - **AI/LLM**: Vertex AI SDK (Gemini 1.5/2.0 Flash)
 - **Database**: Cloud SQL (PostgreSQL - Persistence Layer)
@@ -31,7 +31,7 @@
 - **과업 4.1**: 지연 구간 및 일탈 원인 분석을 위한 Vertex AI 프롬프트 엔지니어링 및 재시도 전략(Exponential Backoff) 구현.
 - **과업 4.2**: FastAPI 중앙 집중식 예외 핸들러 및 구조화된 로깅(Structured Logging) 시스템 통합.
 - **과업 4.3**: 분석 결과 영속성 유지를 위한 Repository 레이어(PostgreSQL 연동) 개발.
-- **과업 4.4**: Streamlit 기반 인터랙티브 대시보드 개발 및 시각화(Plotly) 연동.
+- **과업 4.4**: React 기반 엔터프라이즈 UI 개발 및 웹 표준(WAI-ARIA, Semantic HTML) 준수.
 
 ### Phase 5: 검증, 보안 및 배포 (Week 13 - 15)
 - **과업 5.1**: BPI Challenge 공개 데이터셋을 활용한 분석 엔진의 정확도(Precision/Recall) 검증.
